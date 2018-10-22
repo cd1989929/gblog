@@ -13,9 +13,13 @@
 </template>
 
 <script>
+import "../tools.js"
 import 'gitalk/dist/gitalk.css'
+import 'highlight.js/styles/github.css'
+import 'highlight.js/styles/github-gist.css'
 import marked from "marked";
 import Gitalk from 'gitalk'
+import hljs from 'highlight.js';
 export default {
         props:['id'],
         data(){
@@ -60,14 +64,13 @@ export default {
                                 document.title = json.title;
                                 if(this.showGitalk()){
                                         var gitalk = new Gitalk({
-                                                clientID: config.gitalk.clientid,
-                                                clientSecret: config.gitalk.clientsecret,
+                                                clientID: config.clientid,
+                                                clientSecret: config.clientsecret,
                                                 repo:config.repo,
                                                 owner: config.owner,
                                                 admin: [config.owner],
-                                                id: '#'+this.id,
-                                                labels:[config.gitalk.label],
-                                                createIssueManually:true,
+                                                number:this.id*1,
+                                                createIssueManually:false,
                                                 distractionFreeMode: false
                                         })
                                         gitalk.render('gitalk')
@@ -75,14 +78,9 @@ export default {
                         })
                 },
                 showGitalk() {
-                        let gitalkLabels = 0;
-                        let gitalkLabel   = this.$store.state.config.gitalk.label;
-                        this.article.labels.forEach(label => {
-                                if(label.name == '#'+this.id || label.name ==gitalkLabel){
-                                        gitalkLabels ++ ;
-                                }
-                        });
-                        return gitalkLabels == 2;
+                        let talk   = this.$store.state.config.talk;
+                        let notalk   = this.$store.state.config.disable_talk;
+                        return talk && !this.article.labels.filter(label=>label.name == notalk).length;
                 },
                 initPage(){
                         this.pageparam .prev=0;

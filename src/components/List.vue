@@ -11,11 +11,11 @@
                                 <tr v-for="(article,i) in articles" :key="article.number">
                                         <td class="date">{{new Date(article.created_at).format('M/dd')}}</td>
                                         <td colspan="3">
-                                                <router-link :to="'/post/'+article.number" :class="{badge:article.comments}" :data-badge="article.comments">{{article.title}}</router-link>
+                                                <router-link :to="'/post/'+article.number" :class="{badge:showCommentsCount(article)}" :data-badge="article.comments">{{article.title}}</router-link>
                                                 <router-link v-for="label in labels(i)" :to="'/tag/'+label" :key="label" class="label d-inline-block mx-1">{{label}}</router-link>
                                         </td>
                                 </tr>
-                                <tr key="page" v-if="!loading && pageparam.last>1">
+                                <tr key="page" v-if="!loading && (pageparam.last>1 || pageparam.curr > 1)">
                                         <td class="pagebtn" colspan="2">
                                                 <router-link class="btn btn-link tooltip mx-1" data-tooltip="首页" v-if="pageparam.curr > 1" :to="url(1)"><i class="icon icon-back"></i></router-link>
                                                 <router-link class="btn btn-link tooltip mx-1" data-tooltip="上一页"  v-if="pageparam.prev>0" :to="url(pageparam.prev)"><i class="icon icon-arrow-left"></i></router-link>
@@ -37,6 +37,8 @@
 </template>
 
 <script>
+import "../tools.js"
+
 export default {
         name: 'List',
         props:['page','tag','query'],
@@ -91,7 +93,7 @@ export default {
                 loadList() {
                         var config   = this.$store.state.config;
                         this.pageparam.curr = this.page||1;
-                        document.title = this.pageparam.curr==1?'':('第'+this.pageparam.curr+'页') +config.title;
+                        document.title = (this.pageparam.curr==1?'':('第'+this.pageparam.curr+'页 - '))+ (this.tag?'标签:'+this.tag+' - ':'')+ (this.query?'搜索:'+this.query+' - ':'') +config.title;
                         fetch(this.api())
                         .then(resp=>{
                                 resp.status==200&& this.parsePageLink(resp.headers.get('Link'))
@@ -116,15 +118,14 @@ export default {
                                 this.pageparam[rs[2]] = rs[1];
                         }
                 },
+                showCommentsCount(article){
+                        return this.$store.state.config.talk && article.comments;
+                },
                 labels(i){
-                        let artLabels = [];
-                        let gitalkLabel   = this.$store.state.config.gitalk.label;
-                        this.articles[i].labels.forEach(label => {
-                                if(!/^#\d+$/.test(label.name) && label.name !=gitalkLabel){
-                                        artLabels.push(label.name)
-                                }
-                        });
-                        return artLabels;
+                        let notalk   = this.$store.state.config.disable_talk;
+                        return this.articles[i].labels
+                        .filter(label=>label.name !=notalk)
+                        .map(label=>label.name);
                 }
         }
 }
@@ -133,7 +134,7 @@ export default {
 </script>
 <style scoped>
 table tbody tr:last-child td{border-bottom:none}
-.pagebtn{width:150px}
-.date{width:2rem}
+.date{width:2rem;vertical-align: top}
 a.label{text-decoration:none;color:#5b657a}
+.pagebtn{white-space:nowrap}
 </style>
